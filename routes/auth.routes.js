@@ -58,7 +58,8 @@ router.post("/signup", (req, res, next) => {
 router.get("/login", (req, res) => res.render("auth/login"));
 
 router.post("/login", (req, res, next) => {
-  console.log("true")
+  console.log("SESSION =====> ", req.session);
+
   const { email, password } = req.body;
 
   if (email === "" || password === "") {
@@ -72,16 +73,33 @@ router.post("/login", (req, res, next) => {
     .then((user) => {
       if (!user) {
         res.render("auth/login", {
-          errorMessage: "Email is not registered. Try with a different email address.",
+          errorMessage: "Email is not registered. Try with other email.",
         });
         return;
       } else if (bcryptjs.compareSync(password, user.passwordHash)) {
-        res.render("users/user-profile", { user });
+        // when we introduce session, the following line gets replaced with what follows:
+        // res.render('users/user-profile', { user });
+        //******* SAVE THE USER IN THE SESSION ********//
+        req.session.currentUser = user;
+        res.redirect("/userProfile");
       } else {
         res.render("auth/login", { errorMessage: "Incorrect password." });
       }
     })
     .catch((error) => next(error));
 });
+
+router.post('/logout', (req, res, next) => {
+  req.session.destroy(err => {
+    if (err) next(err);
+    res.redirect('/');
+  });
+});
+
+router.get('/userProfile', (req, res) => {
+  res.render('users/user-profile', { userInSession: req.session.currentUser });
+});
+
+
 
 module.exports = router;
